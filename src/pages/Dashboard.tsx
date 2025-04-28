@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Bell } from 'lucide-react';
+import { Plus, Bell, Home } from 'lucide-react';
 import CategoryFilter from '@/components/CategoryFilter';
 import FoodItemsList from '@/components/FoodItemsList';
 import AddFoodItemDialog from '@/components/AddFoodItemDialog';
@@ -26,7 +25,10 @@ const Dashboard = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Fresh Home Radar</h1>
+        <div className="flex items-center gap-2">
+          <Home className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl font-bold">HomeInvo</h1>
+        </div>
         <div className="flex space-x-2">
           <Button variant="outline" size="icon" onClick={() => setIsNotificationDialogOpen(true)}>
             <Bell className="h-5 w-5" />

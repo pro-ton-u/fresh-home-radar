@@ -11,7 +11,7 @@ const CategoryFilter = () => {
       <Button
         onClick={() => setSelectedCategory('all')}
         variant={selectedCategory === 'all' ? "default" : "outline"}
-        className="flex-1 min-w-[80px]"
+        className="flex-1 min-w-[80px] active:scale-95 transition-transform"
       >
         All
       </Button>
@@ -19,7 +19,7 @@ const CategoryFilter = () => {
       <Button
         onClick={() => setSelectedCategory('fruits')}
         variant={selectedCategory === 'fruits' ? "default" : "outline"}
-        className="flex-1 min-w-[80px] bg-category-fruits text-black hover:text-black hover:bg-category-fruits/90"
+        className="flex-1 min-w-[80px] bg-category-fruits text-black hover:text-black hover:bg-category-fruits/90 active:scale-95 transition-transform"
         style={{ 
           backgroundColor: selectedCategory === 'fruits' ? 'var(--category-fruits, #FDE1D3)' : '',
           color: 'black',
@@ -32,7 +32,7 @@ const CategoryFilter = () => {
       <Button
         onClick={() => setSelectedCategory('vegetables')}
         variant={selectedCategory === 'vegetables' ? "default" : "outline"}
-        className="flex-1 min-w-[80px] bg-category-vegetables text-black hover:text-black hover:bg-category-vegetables/90"
+        className="flex-1 min-w-[80px] bg-category-vegetables text-black hover:text-black hover:bg-category-vegetables/90 active:scale-95 transition-transform"
         style={{ 
           backgroundColor: selectedCategory === 'vegetables' ? 'var(--category-vegetables, #F2FCE2)' : '',
           color: 'black',
@@ -45,7 +45,7 @@ const CategoryFilter = () => {
       <Button
         onClick={() => setSelectedCategory('dairy')}
         variant={selectedCategory === 'dairy' ? "default" : "outline"}
-        className="flex-1 min-w-[80px] bg-category-dairy text-black hover:text-black hover:bg-category-dairy/90"
+        className="flex-1 min-w-[80px] bg-category-dairy text-black hover:text-black hover:bg-category-dairy/90 active:scale-95 transition-transform"
         style={{ 
           backgroundColor: selectedCategory === 'dairy' ? 'var(--category-dairy, #D3E4FD)' : '',
           color: 'black',
@@ -58,7 +58,7 @@ const CategoryFilter = () => {
       <Button
         onClick={() => setSelectedCategory('packed')}
         variant={selectedCategory === 'packed' ? "default" : "outline"}
-        className="flex-1 min-w-[80px] bg-category-packed text-black hover:text-black hover:bg-category-packed/90"
+        className="flex-1 min-w-[80px] bg-category-packed text-black hover:text-black hover:bg-category-packed/90 active:scale-95 transition-transform"
         style={{ 
           backgroundColor: selectedCategory === 'packed' ? 'var(--category-packed, #FEF7CD)' : '',
           color: 'black',
