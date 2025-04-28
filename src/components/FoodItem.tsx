@@ -1,21 +1,21 @@
+
 import React from 'react';
 import { formatDate, getDaysRemaining, getExpiryStatus, formatRelativeTime } from '@/utils/dateUtils';
 import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { FoodItem as FoodItemType } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash, Eye, Heart } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Trash, Edit, Heart } from 'lucide-react';
 
 interface FoodItemProps {
   item: FoodItemType;
+  onEdit: (item: FoodItemType) => void;
 }
 
-const FoodItem = ({ item }: FoodItemProps) => {
+const FoodItem = ({ item, onEdit }: FoodItemProps) => {
   const { deleteFoodItem } = useFoodInventory();
   const daysRemaining = getDaysRemaining(item.expiryDate);
   const expiryStatus = getExpiryStatus(daysRemaining);
-  const [showDetails, setShowDetails] = React.useState(false);
   
   const getCategoryColor = () => {
     switch (item.category) {
@@ -70,64 +70,38 @@ const FoodItem = ({ item }: FoodItemProps) => {
   };
 
   return (
-    <>
-      <Card className={`animate-fade-in overflow-hidden ${getCategoryColor()}`}>
-        <CardHeader className="p-0">
-          <div className="relative w-full aspect-square overflow-hidden bg-gray-100">
-            <img
-              src={item.image || '/placeholder.svg'}
-              alt={item.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="p-4">
-          <div className="flex justify-between items-start">
-            <h3 className="text-lg font-medium">{item.name}</h3>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor()}`}>
-              {formatRelativeTime(item.expiryDate)}
-            </span>
-          </div>
-          {renderFreshness()}
-          <p className="text-sm text-gray-600 mt-2">Expires: {formatDate(item.expiryDate)}</p>
-          {item.notes && <p className="text-sm mt-1 text-gray-500">{item.notes}</p>}
-        </CardContent>
-        <CardFooter className="flex justify-between p-4 pt-0">
-          <Button variant="ghost" size="sm" onClick={() => setShowDetails(true)}>
-            <Eye className="h-4 w-4 mr-1" />
-            View
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => deleteFoodItem(item.id)}>
-            <Trash className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{item.name} Details</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-sm font-medium">Added on</h4>
-              <p className="text-sm text-gray-600">{formatDate(item.createdAt)}</p>
-            </div>
-            <div>
-              <h4 className="text-sm font-medium">Expires on</h4>
-              <p className="text-sm text-gray-600">{formatDate(item.expiryDate)}</p>
-            </div>
-            {item.notes && (
-              <div>
-                <h4 className="text-sm font-medium">Notes</h4>
-                <p className="text-sm text-gray-600">{item.notes}</p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Card className={`animate-fade-in overflow-hidden ${getCategoryColor()}`}>
+      <CardHeader className="p-0">
+        <div className="relative w-full aspect-square overflow-hidden bg-gray-100">
+          <img
+            src={item.image || '/placeholder.svg'}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start">
+          <h3 className="text-lg font-medium">{item.name}</h3>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor()}`}>
+            {formatRelativeTime(item.expiryDate)}
+          </span>
+        </div>
+        {renderFreshness()}
+        <p className="text-sm text-gray-600 mt-2">Expires: {formatDate(item.expiryDate)}</p>
+        {item.notes && <p className="text-sm mt-1 text-gray-500">{item.notes}</p>}
+      </CardContent>
+      <CardFooter className="flex justify-between p-4 pt-0">
+        <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
+          <Edit className="h-4 w-4 mr-1" />
+          Edit
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => deleteFoodItem(item.id)}>
+          <Trash className="h-4 w-4 mr-1" />
+          Delete
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 
