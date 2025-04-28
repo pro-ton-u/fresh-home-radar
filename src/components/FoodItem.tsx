@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { formatDate, getDaysRemaining, getExpiryStatus, formatRelativeTime } from '@/utils/dateUtils';
 import { useFoodInventory } from '@/contexts/FoodInventoryContext';
@@ -47,15 +48,23 @@ const FoodItem = ({ item, onEdit }: FoodItemProps) => {
   const renderFreshness = () => {
     if (item.category === 'fruits' && item.freshness !== undefined) {
       const hearts = [];
+      const tooltip = `${item.freshness} hearts = ${(item.freshness * 0.6).toFixed(1)} days of freshness`;
+      
       for (let i = 1; i <= 5; i++) {
         hearts.push(
           <Heart
             key={i}
             className={`h-4 w-4 ${i <= item.freshness ? 'fill-red-500 text-red-500' : 'text-gray-300'}`}
+            data-tooltip={tooltip}
           />
         );
       }
-      return <div className="flex space-x-0.5 mt-1">{hearts}</div>;
+      return (
+        <div className="space-y-1">
+          <div className="flex space-x-0.5">{hearts}</div>
+          <p className="text-xs text-gray-500">{tooltip}</p>
+        </div>
+      );
     }
     return null;
   };

@@ -28,7 +28,7 @@ export const getDaysRemaining = (date: Date | string): number => {
 export const getExpiryStatus = (daysRemaining: number): "expired" | "expiring" | "fresh" => {
   if (daysRemaining < 0) {
     return "expired";
-  } else if (daysRemaining <= 3) {
+  } else if (daysRemaining <= 1) {
     return "expiring";
   } else {
     return "fresh";
@@ -37,7 +37,8 @@ export const getExpiryStatus = (daysRemaining: number): "expired" | "expiring" |
 
 // Convert freshness rating (1-5) to expiry date for fruits
 export const freshnessToExpiryDate = (freshness: number): Date => {
-  const daysRemaining = freshness;
+  // Each heart represents 0.6 days of freshness (5 hearts = 3 days)
+  const daysRemaining = freshness * 0.6;
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + daysRemaining);
   return expiryDate;
