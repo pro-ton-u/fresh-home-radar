@@ -1,54 +1,7 @@
-
 import { FoodCategory, FoodItem, AddFoodItemFormData } from "../types";
 
-// Mock data for initial display
-const mockFoodItems: FoodItem[] = [
-  {
-    id: '1',
-    name: 'Apples',
-    category: 'fruits',
-    expiryDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
-    image: '/placeholder.svg',
-    createdAt: new Date(),
-    freshness: 4
-  },
-  {
-    id: '2',
-    name: 'Milk',
-    category: 'dairy',
-    expiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-    image: '/placeholder.svg',
-    createdAt: new Date()
-  },
-  {
-    id: '3',
-    name: 'Spinach',
-    category: 'vegetables',
-    expiryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    image: '/placeholder.svg',
-    createdAt: new Date()
-  },
-  {
-    id: '4',
-    name: 'Pasta Sauce',
-    category: 'packed',
-    expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-    image: '/placeholder.svg',
-    createdAt: new Date()
-  },
-  {
-    id: '5',
-    name: 'Bananas',
-    category: 'fruits',
-    expiryDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // 1 day from now
-    image: '/placeholder.svg',
-    createdAt: new Date(),
-    freshness: 3
-  }
-];
-
 // In-memory storage
-let foodItems = [...mockFoodItems];
+let foodItems: FoodItem[] = [];
 
 // Get all food items
 export const getAllFoodItems = (): Promise<FoodItem[]> => {

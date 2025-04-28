@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { formatDate, getDaysRemaining, getExpiryStatus, formatRelativeTime } from '@/utils/dateUtils';
 import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { FoodItem as FoodItemType } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash, Edit } from 'lucide-react';
+import { Trash, Edit, Heart } from 'lucide-react';
 
 interface FoodItemProps {
   item: FoodItemType;
@@ -17,7 +16,6 @@ const FoodItem = ({ item, onEdit }: FoodItemProps) => {
   const daysRemaining = getDaysRemaining(item.expiryDate);
   const expiryStatus = getExpiryStatus(daysRemaining);
   
-  // Define background color based on category
   const getCategoryColor = () => {
     switch (item.category) {
       case 'fruits':
@@ -33,7 +31,6 @@ const FoodItem = ({ item, onEdit }: FoodItemProps) => {
     }
   };
   
-  // Define status color
   const getStatusColor = () => {
     switch (expiryStatus) {
       case 'expired':
@@ -47,21 +44,18 @@ const FoodItem = ({ item, onEdit }: FoodItemProps) => {
     }
   };
 
-  // Render stars for freshness (only for fruits)
   const renderFreshness = () => {
     if (item.category === 'fruits' && item.freshness !== undefined) {
-      const stars = [];
+      const hearts = [];
       for (let i = 1; i <= 5; i++) {
-        stars.push(
-          <span
+        hearts.push(
+          <Heart
             key={i}
-            className={`text-lg ${i <= item.freshness ? 'text-yellow-500' : 'text-gray-300'}`}
-          >
-            ★
-          </span>
+            className={`h-4 w-4 ${i <= item.freshness ? 'fill-red-500 text-red-500' : 'text-gray-300'}`}
+          />
         );
       }
-      return <div className="flex space-x-0.5 mt-1">{stars}</div>;
+      return <div className="flex space-x-0.5 mt-1">{hearts}</div>;
     }
     return null;
   };
