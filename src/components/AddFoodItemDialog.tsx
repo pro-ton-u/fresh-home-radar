@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { AddFoodItemFormData, FoodCategory, FoodItem } from '@/types';
 import { fileToDataUrl, takePicture } from '@/utils/imageUtils';
 import { freshnessToExpiryDate } from '@/utils/dateUtils';
 import { Calendar } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 interface AddFoodItemDialogProps {
   isOpen: boolean;
@@ -99,9 +99,13 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
     try {
       const dataUrl = await takePicture();
       setImage(dataUrl);
+      toast.success('Photo captured successfully');
     } catch (error) {
+      if (error instanceof Error && error.message === 'Camera access cancelled') {
+        return;
+      }
       console.error('Error taking photo:', error);
-      setError('Failed to take photo. Please try again or upload an image.');
+      toast.error('Failed to take photo. Please try again or upload an image.');
     }
   };
 
