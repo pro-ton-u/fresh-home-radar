@@ -40,7 +40,11 @@ export const freshnessToExpiryDate = (freshness: number): Date => {
   // Each heart represents 0.6 days of freshness (5 hearts = 3 days)
   const daysRemaining = freshness * 0.6;
   const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() + daysRemaining);
+  
+  // Add the days remaining plus the current time to get the exact expiry time
+  const milliseconds = daysRemaining * 24 * 60 * 60 * 1000;
+  expiryDate.setTime(expiryDate.getTime() + milliseconds);
+  
   return expiryDate;
 };
 

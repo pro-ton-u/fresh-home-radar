@@ -100,7 +100,7 @@ export const compressImage = async (
   });
 };
 
-// Take a photo using the device camera
+// Take a photo using the device camera - simplified and improved for better touch handling
 export const takePicture = async (): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -114,7 +114,9 @@ export const takePicture = async (): Promise<string> => {
       const videoElement = document.createElement('video');
       videoElement.setAttribute('autoplay', 'true');
       videoElement.style.width = '100%';
-      videoElement.style.maxWidth = '400px';
+      videoElement.style.maxHeight = '70vh';
+      videoElement.style.objectFit = 'cover';
+      videoElement.style.borderRadius = '8px';
       
       const cameraContainer = document.createElement('div');
       cameraContainer.style.position = 'fixed';
@@ -127,7 +129,8 @@ export const takePicture = async (): Promise<string> => {
       cameraContainer.style.flexDirection = 'column';
       cameraContainer.style.justifyContent = 'center';
       cameraContainer.style.alignItems = 'center';
-      cameraContainer.style.zIndex = '10000'; // Increased z-index to ensure it's on top
+      cameraContainer.style.zIndex = '100000'; // Highest possible z-index
+      cameraContainer.style.padding = '20px';
       
       const buttonContainer = document.createElement('div');
       buttonContainer.style.display = 'flex';
@@ -135,11 +138,12 @@ export const takePicture = async (): Promise<string> => {
       buttonContainer.style.width = '100%';
       buttonContainer.style.maxWidth = '400px';
       buttonContainer.style.marginTop = '20px';
-      buttonContainer.style.padding = '0 20px'; // Add some padding
+      buttonContainer.style.gap = '16px';
       
+      // Create the capture button - larger and easier to tap
       const captureButton = document.createElement('button');
       captureButton.textContent = 'Take Photo';
-      captureButton.style.padding = '16px 32px'; // Larger button
+      captureButton.style.padding = '20px 40px'; // Larger button
       captureButton.style.backgroundColor = '#3B82F6';
       captureButton.style.color = 'white';
       captureButton.style.border = 'none';
@@ -147,16 +151,27 @@ export const takePicture = async (): Promise<string> => {
       captureButton.style.cursor = 'pointer';
       captureButton.style.fontWeight = 'bold';
       captureButton.style.fontSize = '18px'; // Larger text
+      captureButton.style.flex = '1';
+      captureButton.style.maxWidth = '200px';
+      // Add touch-specific styles
+      captureButton.style.WebkitTapHighlightColor = 'transparent';
+      captureButton.style.touchAction = 'manipulation';
       
+      // Create the cancel button - larger and easier to tap
       const cancelButton = document.createElement('button');
       cancelButton.textContent = 'Cancel';
-      cancelButton.style.padding = '16px 32px'; // Larger button
+      cancelButton.style.padding = '20px 40px'; // Larger button
       cancelButton.style.backgroundColor = '#6B7280';
       cancelButton.style.color = 'white';
       cancelButton.style.border = 'none';
       cancelButton.style.borderRadius = '8px';
       cancelButton.style.cursor = 'pointer';
       cancelButton.style.fontSize = '18px'; // Larger text
+      cancelButton.style.flex = '1';
+      cancelButton.style.maxWidth = '200px';
+      // Add touch-specific styles
+      cancelButton.style.WebkitTapHighlightColor = 'transparent';
+      cancelButton.style.touchAction = 'manipulation';
       
       // Add status message
       const statusMessage = document.createElement('p');
@@ -185,21 +200,33 @@ export const takePicture = async (): Promise<string> => {
       
       videoElement.srcObject = stream;
       
-      // Handle cancel button with pointer events
-      cancelButton.onclick = (e) => {
+      // Handle button clicks with both click and touchend events
+      const addButtonEvents = (button, handler) => {
+        button.addEventListener('click', handler, { passive: false });
+        button.addEventListener('touchstart', (e) => {
+          e.preventDefault(); // Prevent default touch behavior
+          button.style.opacity = '0.8';
+        }, { passive: false });
+        button.addEventListener('touchend', (e) => {
+          e.preventDefault(); // Prevent default touch behavior
+          button.style.opacity = '1';
+          handler(e);
+        }, { passive: false });
+      };
+      
+      // Handle cancel button
+      addButtonEvents(cancelButton, (e) => {
         e.preventDefault();
-        e.stopPropagation();
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
         }
         document.body.removeChild(cameraContainer);
         reject(new Error('Camera access cancelled'));
-      };
+      });
       
-      // Handle capture button with pointer events
-      captureButton.onclick = (e) => {
+      // Handle capture button
+      addButtonEvents(captureButton, (e) => {
         e.preventDefault();
-        e.stopPropagation();
         
         // Create a canvas to capture the image
         const canvas = document.createElement('canvas');
@@ -224,7 +251,7 @@ export const takePicture = async (): Promise<string> => {
         document.body.removeChild(cameraContainer);
         
         resolve(dataUrl);
-      };
+      });
     } catch (error) {
       console.error('Error accessing camera:', error);
       reject(error);

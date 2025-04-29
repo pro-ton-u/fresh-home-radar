@@ -10,7 +10,7 @@ import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { AddFoodItemFormData, FoodCategory, FoodItem } from '@/types';
 import { fileToDataUrl, takePicture } from '@/utils/imageUtils';
 import { freshnessToExpiryDate } from '@/utils/dateUtils';
-import { Calendar, Camera } from 'lucide-react';
+import { Calendar, Camera, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AddFoodItemDialogProps {
@@ -65,9 +65,11 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
       
       resetForm();
       onClose();
+      toast.success(editItem ? 'Food item updated' : 'New food item added');
     } catch (err) {
       console.error('Error submitting form:', err);
       setError('Failed to save food item. Please try again.');
+      toast.error('Failed to save food item');
     } finally {
       setIsSubmitting(false);
     }
@@ -91,9 +93,11 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
     try {
       const dataUrl = await fileToDataUrl(file);
       setImage(dataUrl);
+      toast.success('Image uploaded successfully');
     } catch (error) {
       console.error('Error processing image:', error);
       setError('Failed to process image. Please try a different file.');
+      toast.error('Failed to process image');
     }
   };
   
@@ -110,8 +114,13 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
         return;
       }
       console.error('Error taking photo:', error);
-      toast.error('Failed to take photo. Please try again or upload an image.');
+      toast.error('Failed to take photo');
     }
+  };
+  
+  const removeImage = () => {
+    setImage('/placeholder.svg');
+    toast.success('Image removed');
   };
 
   return (
@@ -196,39 +205,65 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
               </div>
             )}
             
+            {/* Improved image section with better camera UI */}
             <div className="space-y-2">
               <Label htmlFor="image">Image</Label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="border rounded-md"
-                    disabled={isCameraActive}
-                  />
-                </div>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={handleTakePhoto}
-                  disabled={isCameraActive}
-                  className="flex items-center gap-2 min-w-[140px]"
-                >
-                  <Camera className="h-4 w-4" />
-                  {isCameraActive ? 'Capturing...' : 'Take Photo'}
-                </Button>
-              </div>
+              
+              {/* Show image preview if available */}
               {image && image !== '/placeholder.svg' && (
-                <div className="mt-2 relative w-full max-w-[200px] aspect-square">
+                <div className="relative w-full h-48 mb-3">
                   <img 
                     src={image} 
                     alt="Food item preview" 
                     className="w-full h-full object-cover rounded-md" 
                   />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-black/70 p-1 rounded-full"
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </button>
                 </div>
               )}
+              
+              {/* Image capture buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="relative">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleTakePhoto}
+                    disabled={isCameraActive || isSubmitting}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <Camera className="h-5 w-5" />
+                    Take Photo
+                  </Button>
+                </div>
+                
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    asChild
+                  >
+                    <label>
+                      <Upload className="h-5 w-5" />
+                      Upload Image
+                      <input
+                        type="file"
+                        id="image"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="sr-only"
+                        disabled={isCameraActive || isSubmitting}
+                      />
+                    </label>
+                  </Button>
+                </div>
+              </div>
             </div>
             
             <div className="space-y-2">
