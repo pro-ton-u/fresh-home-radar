@@ -153,8 +153,8 @@ export const takePicture = async (): Promise<string> => {
       captureButton.style.fontSize = '18px'; // Larger text
       captureButton.style.flex = '1';
       captureButton.style.maxWidth = '200px';
-      // Add touch-specific styles
-      captureButton.style.WebkitTapHighlightColor = 'transparent';
+      // Fix: Use standard CSS property names instead of vendor-prefixed ones
+      captureButton.style.setProperty('-webkit-tap-highlight-color', 'transparent');
       captureButton.style.touchAction = 'manipulation';
       
       // Create the cancel button - larger and easier to tap
@@ -169,8 +169,8 @@ export const takePicture = async (): Promise<string> => {
       cancelButton.style.fontSize = '18px'; // Larger text
       cancelButton.style.flex = '1';
       cancelButton.style.maxWidth = '200px';
-      // Add touch-specific styles
-      cancelButton.style.WebkitTapHighlightColor = 'transparent';
+      // Fix: Use standard CSS property names instead of vendor-prefixed ones
+      cancelButton.style.setProperty('-webkit-tap-highlight-color', 'transparent');
       cancelButton.style.touchAction = 'manipulation';
       
       // Add status message

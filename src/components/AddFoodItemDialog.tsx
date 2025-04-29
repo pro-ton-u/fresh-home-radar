@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { AddFoodItemFormData, FoodCategory, FoodItem } from '@/types';
 import { fileToDataUrl, takePicture } from '@/utils/imageUtils';
-import { freshnessToExpiryDate } from '@/utils/dateUtils';
+import { freshnessToExpiryDate, getDetailedTimeRemaining } from '@/utils/dateUtils';
 import { Calendar, Camera, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,6 +34,19 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [expiryTimeRemaining, setExpiryTimeRemaining] = useState<string>('');
+
+  useEffect(() => {
+    if (category === 'fruits' && freshness) {
+      const expiryDate = freshnessToExpiryDate(freshness);
+      let interval = setInterval(() => {
+        const timeRemaining = getDetailedTimeRemaining(expiryDate);
+        setExpiryTimeRemaining(timeRemaining);
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [category, freshness]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,6 +141,7 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{editItem ? 'Edit Food Item' : 'Add New Food Item'}</DialogTitle>
+          <DialogDescription>Fill in the details below to add a new food item to your inventory.</DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -138,6 +152,70 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
           )}
           
           <div className="grid grid-cols-1 gap-4">
+            {/* Improved image section - now at the top for better visibility */}
+            <div className="space-y-2">
+              <Label htmlFor="image">Food Image</Label>
+              
+              <div className="rounded-md border-2 border-dashed border-gray-300 p-4 flex flex-col items-center justify-center">
+                {/* Show image preview if available */}
+                {image && image !== '/placeholder.svg' ? (
+                  <div className="relative w-full h-48 mb-3">
+                    <img 
+                      src={image} 
+                      alt="Food item preview" 
+                      className="w-full h-full object-cover rounded-md" 
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-2 right-2 bg-black/70 p-1.5 rounded-full hover:bg-black"
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-48 w-full bg-gray-100 rounded-md text-gray-400">
+                    <Camera className="h-12 w-12" />
+                  </div>
+                )}
+                
+                {/* Image capture buttons */}
+                <div className="grid grid-cols-2 gap-3 w-full mt-3">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleTakePhoto}
+                    disabled={isCameraActive || isSubmitting}
+                    className="w-full flex items-center justify-center gap-2 h-12"
+                  >
+                    <Camera className="h-5 w-5" />
+                    Take Photo
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2 h-12"
+                    asChild
+                    disabled={isCameraActive || isSubmitting}
+                  >
+                    <label>
+                      <Upload className="h-5 w-5" />
+                      Upload Image
+                      <input
+                        type="file"
+                        id="image"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="sr-only"
+                        disabled={isCameraActive || isSubmitting}
+                      />
+                    </label>
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -184,9 +262,12 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500">
-                  {freshness} hearts = {(freshness * 0.6).toFixed(1)} days of freshness
-                </p>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <p>{freshness} hearts = {(freshness * 0.6).toFixed(1)} days of freshness</p>
+                  {expiryTimeRemaining && (
+                    <p className="font-medium text-amber-600">Expires in: {expiryTimeRemaining}</p>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
@@ -204,67 +285,6 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                 </div>
               </div>
             )}
-            
-            {/* Improved image section with better camera UI */}
-            <div className="space-y-2">
-              <Label htmlFor="image">Image</Label>
-              
-              {/* Show image preview if available */}
-              {image && image !== '/placeholder.svg' && (
-                <div className="relative w-full h-48 mb-3">
-                  <img 
-                    src={image} 
-                    alt="Food item preview" 
-                    className="w-full h-full object-cover rounded-md" 
-                  />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 bg-black/70 p-1 rounded-full"
-                  >
-                    <X className="h-4 w-4 text-white" />
-                  </button>
-                </div>
-              )}
-              
-              {/* Image capture buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleTakePhoto}
-                    disabled={isCameraActive || isSubmitting}
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    <Camera className="h-5 w-5" />
-                    Take Photo
-                  </Button>
-                </div>
-                
-                <div className="relative">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
-                    asChild
-                  >
-                    <label>
-                      <Upload className="h-5 w-5" />
-                      Upload Image
-                      <input
-                        type="file"
-                        id="image"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="sr-only"
-                        disabled={isCameraActive || isSubmitting}
-                      />
-                    </label>
-                  </Button>
-                </div>
-              </div>
-            </div>
             
             <div className="space-y-2">
               <Label htmlFor="notes">Notes (Optional)</Label>
