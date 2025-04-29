@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { formatDate, getDaysRemaining, getExpiryStatus, formatRelativeTime } from '@/utils/dateUtils';
+import React, { useState, useEffect } from 'react';
+import { formatDate, getDaysRemaining, getExpiryStatus, formatRelativeTime, getDetailedTimeRemaining } from '@/utils/dateUtils';
 import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { FoodItem as FoodItemType } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -16,6 +16,22 @@ const FoodItem = ({ item, onView }: FoodItemProps) => {
   const { deleteFoodItem } = useFoodInventory();
   const daysRemaining = getDaysRemaining(item.expiryDate);
   const expiryStatus = getExpiryStatus(daysRemaining);
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
+  
+  // Update the time remaining for fruits every second
+  useEffect(() => {
+    if (item.category === 'fruits') {
+      const updateTimer = () => {
+        setTimeRemaining(getDetailedTimeRemaining(item.expiryDate));
+      };
+      
+      updateTimer(); // Initial update
+      
+      const timerId = setInterval(updateTimer, 1000);
+      
+      return () => clearInterval(timerId);
+    }
+  }, [item.expiryDate, item.category]);
   
   const getCategoryColor = () => {
     switch (item.category) {
@@ -63,6 +79,9 @@ const FoodItem = ({ item, onView }: FoodItemProps) => {
         <div className="space-y-1">
           <div className="flex space-x-0.5">{hearts}</div>
           <p className="text-xs text-gray-500">{tooltip}</p>
+          {timeRemaining && (
+            <p className="text-xs font-medium text-blue-600">Expires in: {timeRemaining}</p>
+          )}
         </div>
       );
     }

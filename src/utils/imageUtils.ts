@@ -127,7 +127,7 @@ export const takePicture = async (): Promise<string> => {
       cameraContainer.style.flexDirection = 'column';
       cameraContainer.style.justifyContent = 'center';
       cameraContainer.style.alignItems = 'center';
-      cameraContainer.style.zIndex = '1000';
+      cameraContainer.style.zIndex = '10000'; // Increased z-index to ensure it's on top
       
       const buttonContainer = document.createElement('div');
       buttonContainer.style.display = 'flex';
@@ -135,25 +135,28 @@ export const takePicture = async (): Promise<string> => {
       buttonContainer.style.width = '100%';
       buttonContainer.style.maxWidth = '400px';
       buttonContainer.style.marginTop = '20px';
+      buttonContainer.style.padding = '0 20px'; // Add some padding
       
       const captureButton = document.createElement('button');
       captureButton.textContent = 'Take Photo';
-      captureButton.style.padding = '12px 24px';
+      captureButton.style.padding = '16px 32px'; // Larger button
       captureButton.style.backgroundColor = '#3B82F6';
       captureButton.style.color = 'white';
       captureButton.style.border = 'none';
       captureButton.style.borderRadius = '8px';
       captureButton.style.cursor = 'pointer';
       captureButton.style.fontWeight = 'bold';
+      captureButton.style.fontSize = '18px'; // Larger text
       
       const cancelButton = document.createElement('button');
       cancelButton.textContent = 'Cancel';
-      cancelButton.style.padding = '12px 24px';
+      cancelButton.style.padding = '16px 32px'; // Larger button
       cancelButton.style.backgroundColor = '#6B7280';
       cancelButton.style.color = 'white';
       cancelButton.style.border = 'none';
       cancelButton.style.borderRadius = '8px';
       cancelButton.style.cursor = 'pointer';
+      cancelButton.style.fontSize = '18px'; // Larger text
       
       // Add status message
       const statusMessage = document.createElement('p');
@@ -182,8 +185,10 @@ export const takePicture = async (): Promise<string> => {
       
       videoElement.srcObject = stream;
       
-      // Handle cancel button
-      cancelButton.onclick = () => {
+      // Handle cancel button with pointer events
+      cancelButton.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
         }
@@ -191,8 +196,11 @@ export const takePicture = async (): Promise<string> => {
         reject(new Error('Camera access cancelled'));
       };
       
-      // Handle capture button
-      captureButton.onclick = () => {
+      // Handle capture button with pointer events
+      captureButton.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
         // Create a canvas to capture the image
         const canvas = document.createElement('canvas');
         canvas.width = videoElement.videoWidth;

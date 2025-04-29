@@ -214,7 +214,7 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                   variant="outline" 
                   onClick={handleTakePhoto}
                   disabled={isCameraActive}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 min-w-[140px]"
                 >
                   <Camera className="h-4 w-4" />
                   {isCameraActive ? 'Capturing...' : 'Take Photo'}
