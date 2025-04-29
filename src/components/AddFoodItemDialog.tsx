@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { AddFoodItemFormData, FoodCategory, FoodItem } from '@/types';
-import { fileToDataUrl, takePicture } from '@/utils/imageUtils';
+import { 
+  fileToDataUrl
+} from '@/utils/imageUtils';
 import { freshnessToExpiryDate, getDetailedTimeRemaining } from '@/utils/dateUtils';
 import { Camera, Image, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { detectFoodItem } from '../services/foodDetectorService';
 
 interface AddFoodItemDialogProps {
   isOpen: boolean;
@@ -33,9 +35,12 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [expiryTimeRemaining, setExpiryTimeRemaining] = useState<string>('');
-  const [isImageCaptured, setIsImageCaptured] = useState(false);
+  const [isImageCaptured, setIsImageCaptured] = useState(editItem?.image && editItem.image !== '/placeholder.svg' ? true : false);
+  const [isDetecting, setIsDetecting] = useState(false);
 
   useEffect(() => {
     if (category === 'fruits' && freshness) {
@@ -48,6 +53,29 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
       return () => clearInterval(interval);
     }
   }, [category, freshness]);
+
+  // Start camera when showCamera is true
+  useEffect(() => {
+    if (!showCamera) return;
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        setCameraStream(stream);
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch (err) {
+        console.error('Camera start error:', err);
+        toast.error('Unable to access camera');
+        setShowCamera(false);
+      }
+    };
+    startCamera();
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        setCameraStream(null);
+      }
+    };
+  }, [showCamera]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,40 +130,112 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
     const file = e.target.files?.[0];
     if (!file) return;
+    processAndSetImage(file, 'gallery');
+  };
+  
+  const handleOpenCamera = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowCamera(true);
+  };
+
+  const handleCaptureFromCamera = async () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    setImage(dataUrl);
+    setIsImageCaptured(true);
+    setShowCamera(false);
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    toast.success('Photo captured successfully');
     
+    // Auto-detect the food item
     try {
-      const dataUrl = await fileToDataUrl(file);
-      setImage(dataUrl);
-      setIsImageCaptured(true);
-      toast.success('Image uploaded successfully');
-    } catch (error) {
-      console.error('Error processing image:', error);
-      setError('Failed to process image. Please try a different file.');
-      toast.error('Failed to process image');
-    }
-  };
-  
-  const handleTakePhoto = async () => {
-    try {
-      setIsCameraActive(true);
-      const dataUrl = await takePicture();
-      setImage(dataUrl);
-      setIsImageCaptured(true);
-      setIsCameraActive(false);
-      toast.success('Photo captured successfully');
-    } catch (error) {
-      setIsCameraActive(false);
-      if (error instanceof Error && error.message === 'Camera access cancelled') {
-        return;
+      setIsDetecting(true);
+      const result = await detectFoodItem(dataUrl);
+      
+      // Auto-fill the form with the detected food
+      if (result.confidence > 0.7) { // Only auto-fill if confidence is high
+        setName(result.class);
+        // You could also set other fields like category based on the detected item
       }
-      console.error('Error taking photo:', error);
-      toast.error('Failed to take photo');
+    } catch (error) {
+      console.error('Failed to detect food item:', error);
+      // You could show a toast notification here
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
+  const handleCancelCamera = () => {
+    setShowCamera(false);
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  // Centralized function to process and set the image (from camera or gallery)
+  const processAndSetImage = async (file: File, sourceType: 'camera' | 'gallery') => {
+    try {
+      setError(null);
+      setIsSubmitting(true);
+      toast.loading(`Processing image from ${sourceType}...`);
+
+      // --- Validation --- 
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Invalid file type. Please select an image.');
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        throw new Error('Image too large (max 10MB).');
+      }
+
+      // --- Optional Compression --- 
+      // let processedFile = file;
+      // try {
+      //   processedFile = await compressImage(file);
+      //   console.log('Image compressed successfully');
+      // } catch (compressionError) {
+      //   console.warn('Could not compress image, using original:', compressionError);
+      //   // Continue with the original file if compression fails
+      // }
+
+      // --- Convert to Data URL --- 
+      const dataUrl = await fileToDataUrl(file); // Use the original or compressed file
+
+      // --- Update State --- 
+      setImage(dataUrl);
+      setIsImageCaptured(true);
+      toast.dismiss();
+      toast.success(`Image from ${sourceType} added successfully!`);
+
+    } catch (error) {
+      console.error(`Error processing image from ${sourceType}:`, error);
+      const message = error instanceof Error ? error.message : 'Unknown processing error.';
+      setError(`Failed to process image: ${message}`);
+      toast.dismiss();
+      toast.error('Image processing failed', { description: message });
+      // Reset image state if processing fails
+      // setImage('/placeholder.svg'); 
+      // setIsImageCaptured(false);
+    } finally {
+      setIsSubmitting(false); 
     }
   };
   
-  const removeImage = () => {
+  const removeImage = (e: React.MouseEvent) => {
+    e.preventDefault();
     setImage('/placeholder.svg');
     setIsImageCaptured(false);
     toast.success('Image removed');
@@ -147,9 +247,9 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
         <DialogHeader>
           <DialogTitle>{editItem ? 'Edit Food Item' : 'Add New Food Item'}</DialogTitle>
           <DialogDescription>
-            {isImageCaptured 
-              ? 'Great! Your image is uploaded. Now complete the details below.'
-              : 'Take a photo or upload an image of your food item, then fill in the details.'}
+            {isImageCaptured
+              ? 'Image is ready. Fill in remaining details.'
+              : 'Take a photo or upload an image of your food item.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -161,70 +261,81 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
           )}
           
           <div className="grid grid-cols-1 gap-4">
-            {/* Improved image section with more emphasis on camera */}
+            {/* Image upload section */}
             <div className="space-y-2">
               <Label htmlFor="image" className="flex items-center gap-2">
-                <Image className="h-4 w-4" />
-                Food Image
+                <Image className="h-4 w-4" /> Food Image
               </Label>
-              
-              <div className="rounded-md border-2 border-dashed border-gray-300 p-4 flex flex-col items-center justify-center">
-                {/* Show image preview if available */}
-                {image && image !== '/placeholder.svg' ? (
-                  <div className="relative w-full h-48 mb-3">
-                    <img 
-                      src={image} 
-                      alt="Food item preview" 
-                      className="w-full h-full object-cover rounded-md" 
-                    />
+              <div className="rounded-md border-2 border-dashed border-gray-300 p-4">
+                {
+                  showCamera ? (
+                    <div className="flex flex-col items-center">
+                      <video
+                        ref={videoRef}
+                        className="w-full h-48 object-cover rounded-md"
+                        autoPlay
+                        muted
+                      />
+                      <div className="mt-2 flex gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={handleCancelCamera}
+                          className="flex-1 bg-gray-500 text-white p-2 rounded-md"
+                          disabled={isSubmitting}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCaptureFromCamera}
+                          className="flex-1 bg-blue-600 text-white p-2 rounded-md"
+                          disabled={isSubmitting}
+                        >
+                          Capture
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-48 w-full bg-gray-100 rounded-md text-gray-400">
+                      {image && image !== '/placeholder.svg' ? (
+                        <img src={image} alt="Preview" className="w-full h-full object-cover rounded-md" />
+                      ) : (
+                        <Camera className="h-12 w-12" />
+                      )}
+                    </div>
+                  )
+                }
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {!showCamera && (
                     <button
                       type="button"
-                      onClick={removeImage}
-                      className="absolute top-2 right-2 bg-black/70 p-1.5 rounded-full hover:bg-black"
+                      onClick={handleOpenCamera}
+                      className="w-full bg-blue-600 text-white py-2 rounded-md flex items-center justify-center gap-1"
+                      disabled={isSubmitting}
                     >
-                      <X className="h-4 w-4 text-white" />
+                      <Camera className="inline-block" />
+                      <span>Take Photo</span>
                     </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-48 w-full bg-gray-100 rounded-md text-gray-400">
-                    <Camera className="h-12 w-12 mb-2" />
-                    <p className="text-sm text-gray-500 text-center">Take a photo or upload an image</p>
-                  </div>
-                )}
-                
-                {/* Image capture buttons - Emphasized camera button */}
-                <div className="grid grid-cols-1 gap-3 w-full mt-3">
-                  <Button 
-                    type="button" 
-                    variant="default" 
-                    onClick={handleTakePhoto}
-                    disabled={isCameraActive || isSubmitting}
-                    className="w-full flex items-center justify-center gap-2 h-12 bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Camera className="h-5 w-5" />
-                    Take Photo with Camera
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2 h-12"
-                    asChild
-                    disabled={isCameraActive || isSubmitting}
-                  >
-                    <label>
-                      <Image className="h-5 w-5" />
-                      Upload Image from Gallery
+                  )}
+                  {!showCamera && (
+                    <div className="relative w-full">
+                      <button
+                        type="button"
+                        className="w-full border border-gray-400 py-2 rounded-md flex items-center justify-center gap-1"
+                        disabled={isSubmitting}
+                      >
+                        <Image className="inline-block" />
+                        <span>Upload Image</span>
+                      </button>
                       <input
                         type="file"
-                        id="image"
                         accept="image/*"
                         onChange={handleFileChange}
-                        className="sr-only"
-                        disabled={isCameraActive || isSubmitting}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={isSubmitting || showCamera}
                       />
-                    </label>
-                  </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -269,7 +380,7 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                       className="text-2xl focus:outline-none"
                       onClick={() => setFreshness(star)}
                     >
-                      <span className={star <= freshness ? 'text-red-500' : 'text-gray-300'}>
+                      <span className={star === freshness ? 'text-red-500' : 'text-gray-300'}>
                         ❤
                       </span>
                     </button>
@@ -315,13 +426,13 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={isSubmitting || isCameraActive}
+              disabled={isSubmitting || showCamera}
             >
               Cancel
             </Button>
             <Button 
               type="submit" 
-              disabled={isSubmitting || isCameraActive}
+              disabled={isSubmitting || showCamera}
             >
               {isSubmitting ? 'Saving...' : editItem ? 'Update Item' : 'Add Item'}
             </Button>
