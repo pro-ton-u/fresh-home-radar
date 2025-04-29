@@ -14,6 +14,7 @@ import { freshnessToExpiryDate, getDetailedTimeRemaining } from '@/utils/dateUti
 import { Camera, Image, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { detectFoodItem } from '../services/foodDetectorService';
+import { detectFruits } from '../services/fruitDetectorApi';
 
 interface AddFoodItemDialogProps {
   isOpen: boolean;
@@ -54,14 +55,24 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
     }
   }, [category, freshness]);
 
-  // Start camera when showCamera is true
+  // Improve camera startup in useEffect
   useEffect(() => {
     if (!showCamera) return;
     const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        console.log('Starting camera in AddFoodItemDialog...');
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 } 
+          } 
+        });
         setCameraStream(stream);
-        if (videoRef.current) videoRef.current.srcObject = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          console.log('Camera stream set to video element');
+        }
       } catch (err) {
         console.error('Camera start error:', err);
         toast.error('Unable to access camera');
@@ -141,40 +152,100 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
     setShowCamera(true);
   };
 
+  // Improve capture function to fix detection issues
   const handleCaptureFromCamera = async () => {
-    if (!videoRef.current) return;
-    const video = videoRef.current;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    setImage(dataUrl);
-    setIsImageCaptured(true);
-    setShowCamera(false);
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
+    if (!videoRef.current) {
+      console.error('Video reference is null');
+      return;
     }
-    toast.success('Photo captured successfully');
     
-    // Auto-detect the food item
     try {
-      setIsDetecting(true);
-      const result = await detectFoodItem(dataUrl);
+      console.log('Capturing image from camera...');
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      console.log(`Canvas size: ${canvas.width}x${canvas.height}`);
       
-      // Auto-fill the form with the detected food
-      if (result.confidence > 0.7) { // Only auto-fill if confidence is high
-        setName(result.class);
-        // You could also set other fields like category based on the detected item
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error('Could not get canvas context');
+        return;
       }
-    } catch (error) {
-      console.error('Failed to detect food item:', error);
-      // You could show a toast notification here
-    } finally {
-      setIsDetecting(false);
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      setImage(dataUrl);
+      setIsImageCaptured(true);
+      setShowCamera(false);
+      
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        setCameraStream(null);
+      }
+      
+      toast.success('Photo captured successfully');
+      
+      // Auto-detect the food item
+      try {
+        setIsDetecting(true);
+        toast.loading('Analyzing image...');
+        
+        // Convert the data URL to a File object
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+        
+        // Use the new ML model to detect fruits/vegetables
+        console.log('Sending image to detection API...');
+        const results = await detectFruits(file);
+        console.log('Detection results:', results);
+        
+        // If we have results with good confidence
+        if (results && results.length > 0 && results[0].confidence > 0.5) {
+          const topResult = results[0];
+          
+          // Format the detected label (e.g., "green_apple" -> "Green Apple")
+          const formattedName = topResult.label
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          setName(formattedName);
+          
+          // Auto-categorize based on detection
+          if (topResult.label.includes('fruit') || 
+              ['apple', 'banana', 'orange', 'grape', 'mango', 'kiwi', 'pear', 'strawberry', 'blueberry',
+               'peach', 'watermelon', 'pineapple', 'lemon', 'avocado'].some(fruit => 
+                topResult.label.includes(fruit))) {
+            setCategory('fruits');
+            console.log(`Set category to fruits based on detection: ${topResult.label}`);
+          } else if (topResult.label.includes('vegetable') || 
+                   ['carrot', 'broccoli', 'pepper', 'cucumber', 'spinach', 'lettuce', 'potato',
+                    'tomato', 'onion', 'garlic', 'cabbage', 'eggplant'].some(veg => 
+                     topResult.label.includes(veg))) {
+            setCategory('vegetables');
+            console.log(`Set category to vegetables based on detection: ${topResult.label}`);
+          }
+          
+          toast.dismiss();
+          toast.success(`Detected: ${formattedName} (${Math.round(topResult.confidence * 100)}% confidence)`);
+        } else {
+          toast.dismiss();
+          toast.info("Couldn't confidently detect food item. Please fill details manually.");
+        }
+      } catch (error) {
+        console.error('Failed to detect food item:', error);
+        toast.dismiss();
+        toast.error("Couldn't detect food item", { 
+          description: "Please enter details manually" 
+        });
+      } finally {
+        setIsDetecting(false);
+      }
+    } catch (err) {
+      console.error('Error in capture process:', err);
+      toast.error('Failed to capture image');
     }
   };
 
@@ -241,8 +312,88 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
     toast.success('Image removed');
   };
 
+  // Add a detect function
+  const handleDetectFromImage = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (image === '/placeholder.svg') {
+      toast.error('Please upload or capture an image first');
+      return;
+    }
+
+    try {
+      setIsDetecting(true);
+      toast.loading('Analyzing image...');
+      
+      // Convert the data URL to a File object
+      const response = await fetch(image);
+      const blob = await response.blob();
+      const file = new File([blob], "detect.jpg", { type: "image/jpeg" });
+      
+      // Use the ML model to detect fruits/vegetables
+      console.log('Sending existing image to detection API...');
+      const results = await detectFruits(file);
+      console.log('Detection results:', results);
+      
+      // If we have results with good confidence
+      if (results && results.length > 0 && results[0].confidence > 0.5) {
+        const topResult = results[0];
+        
+        // Format the detected label (e.g., "green_apple" -> "Green Apple")
+        const formattedName = topResult.label
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        
+        setName(formattedName);
+        
+        // Auto-categorize based on detection
+        if (topResult.label.includes('fruit') || 
+            ['apple', 'banana', 'orange', 'grape', 'mango', 'kiwi', 'pear', 'strawberry', 'blueberry',
+             'peach', 'watermelon', 'pineapple', 'lemon', 'avocado'].some(fruit => 
+              topResult.label.includes(fruit))) {
+          setCategory('fruits');
+          console.log(`Set category to fruits based on detection: ${topResult.label}`);
+        } else if (topResult.label.includes('vegetable') || 
+                 ['carrot', 'broccoli', 'pepper', 'cucumber', 'spinach', 'lettuce', 'potato',
+                  'tomato', 'onion', 'garlic', 'cabbage', 'eggplant'].some(veg => 
+                   topResult.label.includes(veg))) {
+          setCategory('vegetables');
+          console.log(`Set category to vegetables based on detection: ${topResult.label}`);
+        }
+        
+        toast.dismiss();
+        toast.success(`Detected: ${formattedName} (${Math.round(topResult.confidence * 100)}% confidence)`);
+      } else {
+        toast.dismiss();
+        toast.info("Couldn't confidently detect food item. Please fill details manually.");
+      }
+    } catch (error) {
+      console.error('Failed to detect food item:', error);
+      toast.dismiss();
+      toast.error("Couldn't detect food item", { 
+        description: "Please enter details manually" 
+      });
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) {
+          // Stop camera when dialog is closed
+          if (cameraStream) {
+            console.log('Dialog closing - stopping camera');
+            cameraStream.getTracks().forEach(track => track.stop());
+            setCameraStream(null);
+            setShowCamera(false);
+          }
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editItem ? 'Edit Food Item' : 'Add New Food Item'}</DialogTitle>
@@ -273,8 +424,16 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                       <video
                         ref={videoRef}
                         className="w-full h-48 object-cover rounded-md"
-                        autoPlay
-                        muted
+                        autoPlay={true}
+                        muted={true}
+                        playsInline={true}
+                        style={{ backgroundColor: '#000' }}
+                        onLoadedMetadata={() => {
+                          if (videoRef.current) {
+                            videoRef.current.play();
+                            console.log('Video element is playing in AddFoodItemDialog');
+                          }
+                        }}
                       />
                       <div className="mt-2 flex gap-2 w-full">
                         <button
@@ -294,6 +453,9 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                           Capture
                         </button>
                       </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        If camera feed is not visible, please check camera permissions.
+                      </p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-48 w-full bg-gray-100 rounded-md text-gray-400">
@@ -337,6 +499,25 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                     </div>
                   )}
                 </div>
+                {!showCamera && image && image !== '/placeholder.svg' && (
+                  <div className="mt-2 flex justify-between">
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="text-red-500 text-sm flex items-center"
+                    >
+                      <X className="h-4 w-4 mr-1" /> Remove
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDetectFromImage}
+                      className="bg-green-600 text-white px-3 py-1 rounded-md text-sm flex items-center"
+                      disabled={isSubmitting || isDetecting}
+                    >
+                      {isDetecting ? 'Detecting...' : 'Detect Food Type'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             

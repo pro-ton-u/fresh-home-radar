@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Bell, Home } from 'lucide-react';
@@ -8,12 +7,14 @@ import AddFoodItemDialog from '@/components/AddFoodItemDialog';
 import ViewFoodItemDialog from '@/components/ViewFoodItemDialog';
 import NotificationSettings from '@/components/NotificationSettings';
 import { FoodItem } from '@/types';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<FoodItem | undefined>(undefined);
+  const navigate = useNavigate();
 
   const handleAddItem = () => {
     setSelectedItem(undefined);
@@ -39,6 +40,9 @@ const Dashboard = () => {
           <Button onClick={handleAddItem}>
             <Plus className="h-5 w-5 mr-1" />
             Add Item
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/detect')}>
+            Detect Fruits
           </Button>
         </div>
       </div>

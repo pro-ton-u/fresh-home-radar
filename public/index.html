@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Convert SVG to Favicon</title>
+    <script>
+        window.onload = function() {
+            const svg = document.getElementById('home-icon');
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            
+            // Create a new image element
+            const img = new Image();
+            img.onload = function() {
+                // Paint white background
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, 32, 32);
+                
+                // Draw the SVG (scaled to fit)
+                ctx.drawImage(img, 0, 0, 32, 32);
+                
+                // Convert canvas to favicon link
+                const link = document.getElementById('favicon-link');
+                link.href = canvas.toDataURL('image/png');
+                
+                // Show the download link
+                document.getElementById('download').style.display = 'block';
+                document.getElementById('download').href = canvas.toDataURL('image/png');
+                
+                // Also show the canvas
+                document.body.appendChild(canvas);
+            };
+            
+            // Set source of the image to the SVG content
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(svgBlob);
+            img.src = url;
+        };
+    </script>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1>SVG to Favicon Converter</h1>
+    
+    <p>This page converts the home.svg to a favicon:</p>
+    
+    <!-- Original SVG -->
+    <svg id="home-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+    </svg>
+    
+    <!-- Favicon link (will be set by script) -->
+    <link id="favicon-link" rel="icon" type="image/png" />
+    
+    <p>The favicon should appear in your browser tab.</p>
+    <p>Preview (32×32):</p>
+    
+    <a id="download" href="#" download="favicon.png" style="display: none; margin-top: 20px; padding: 10px; background: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Download favicon.png</a>
+    
+    <p style="margin-top: 20px;">Instructions:</p>
+    <ol>
+        <li>Click the download link above to save the favicon</li>
+        <li>Convert the PNG to ICO format using an online converter if needed</li>
+        <li>Replace your existing favicon.ico with the new file</li>
+    </ol>
+</body>
+</html> 
