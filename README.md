@@ -1,73 +1,118 @@
-# Welcome to your Lovable project
+# Fresh Home Radar
 
-## Project info
+A modern real estate application built with React, TypeScript, and Python that helps users discover, filter, and explore property listings.
 
-**URL**: https://lovable.dev/projects/fda0a7b4-d6d3-40d7-b962-4a5a4677be2a
+## Project Overview
 
-## How can I edit this code?
+Fresh Home Radar is a full-stack application featuring:
+- Frontend: React with TypeScript, shadcn-ui components, and Tailwind CSS
+- Backend: Python FastAPI server
 
-There are several ways of editing your application.
+The application allows users to search for properties, filter by various criteria, view detailed listings, and save favorites.
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/fda0a7b4-d6d3-40d7-b962-4a5a4677be2a) and start prompting.
+### Frontend
+- React 18
+- TypeScript
+- Vite
+- shadcn-ui components
+- Tailwind CSS
+- React Router
+- React Query
 
-Changes made via Lovable will be committed automatically to this repo.
+### Backend
+- Python
+- FastAPI
+- PyTorch
+- Transformers
 
-**Use your preferred IDE**
+## Getting Started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
+- Node.js & npm - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Python 3.8+ - [download from python.org](https://www.python.org/downloads/)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
-
+1. Clone the repository
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <repository-url>
+cd fresh-home-radar
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Install frontend dependencies
+```sh
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Install backend dependencies
+```sh
+pip install -r backend/requirements.txt
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Running the Application
+
+#### Development Mode
+
+Start the frontend development server:
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Start the backend server:
+```sh
+npm run dev:server
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Or run both concurrently:
+```sh
+npm run dev:all
+```
 
-**Use GitHub Codespaces**
+#### Production Build
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Build the frontend for production:
+```sh
+npm run build
+```
 
-## What technologies are used for this project?
+Preview the production build:
+```sh
+npm run preview
+```
 
-This project is built with:
+## Project Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+fresh-home-radar/
+├── backend/                 # Python FastAPI backend
+│   ├── fastapi_app.py       # Main FastAPI application
+│   ├── run_server.py        # Server startup script
+│   └── requirements.txt     # Python dependencies
+├── public/                  # Static assets
+├── src/                     # Frontend source code
+│   ├── components/          # Reusable UI components
+│   ├── contexts/            # React context providers
+│   ├── hooks/               # Custom React hooks
+│   ├── lib/                 # Library code
+│   ├── pages/               # Page components
+│   ├── services/            # API services
+│   ├── types/               # TypeScript type definitions
+│   ├── utils/               # Utility functions
+│   ├── App.tsx              # Main App component
+│   └── main.tsx             # Application entry point
+└── ...                      # Configuration files
+```
 
-## How can I deploy this project?
+## Contributing
 
-Simply open [Lovable](https://lovable.dev/projects/fda0a7b4-d6d3-40d7-b962-4a5a4677be2a) and click on Share -> Publish.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## Can I connect a custom domain to my Lovable project?
+## License
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License - see the LICENSE file for details.
