@@ -10,7 +10,7 @@ import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { AddFoodItemFormData, FoodCategory, FoodItem } from '@/types';
 import { fileToDataUrl, takePicture } from '@/utils/imageUtils';
 import { freshnessToExpiryDate } from '@/utils/dateUtils';
-import { Calendar } from 'lucide-react';
+import { Calendar, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AddFoodItemDialogProps {
@@ -33,6 +33,7 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,10 +99,13 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
   
   const handleTakePhoto = async () => {
     try {
+      setIsCameraActive(true);
       const dataUrl = await takePicture();
       setImage(dataUrl);
+      setIsCameraActive(false);
       toast.success('Photo captured successfully');
     } catch (error) {
+      setIsCameraActive(false);
       if (error instanceof Error && error.message === 'Camera access cancelled') {
         return;
       }
@@ -165,14 +169,14 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                       className="text-2xl focus:outline-none"
                       onClick={() => setFreshness(star)}
                     >
-                      <span className={star <= freshness ? 'text-yellow-500' : 'text-gray-300'}>
-                        ★
+                      <span className={star <= freshness ? 'text-red-500' : 'text-gray-300'}>
+                        ❤
                       </span>
                     </button>
                   ))}
                 </div>
                 <p className="text-xs text-gray-500">
-                  {freshness} stars = {freshness} days of freshness
+                  {freshness} hearts = {(freshness * 0.6).toFixed(1)} days of freshness
                 </p>
               </div>
             ) : (
@@ -195,19 +199,25 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
             <div className="space-y-2">
               <Label htmlFor="image">Image</Label>
               <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="border rounded-md"
-                />
+                <div className="relative flex-1">
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="border rounded-md"
+                    disabled={isCameraActive}
+                  />
+                </div>
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={handleTakePhoto}
+                  disabled={isCameraActive}
+                  className="flex items-center gap-2"
                 >
-                  Take Photo
+                  <Camera className="h-4 w-4" />
+                  {isCameraActive ? 'Capturing...' : 'Take Photo'}
                 </Button>
               </div>
               {image && image !== '/placeholder.svg' && (
@@ -238,11 +248,14 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCameraActive}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || isCameraActive}
+            >
               {isSubmitting ? 'Saving...' : editItem ? 'Update Item' : 'Add Item'}
             </Button>
           </DialogFooter>

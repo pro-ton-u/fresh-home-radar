@@ -122,7 +122,7 @@ export const takePicture = async (): Promise<string> => {
       cameraContainer.style.left = '0';
       cameraContainer.style.width = '100%';
       cameraContainer.style.height = '100%';
-      cameraContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      cameraContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
       cameraContainer.style.display = 'flex';
       cameraContainer.style.flexDirection = 'column';
       cameraContainer.style.justifyContent = 'center';
@@ -138,32 +138,48 @@ export const takePicture = async (): Promise<string> => {
       
       const captureButton = document.createElement('button');
       captureButton.textContent = 'Take Photo';
-      captureButton.style.padding = '10px 20px';
+      captureButton.style.padding = '12px 24px';
       captureButton.style.backgroundColor = '#3B82F6';
       captureButton.style.color = 'white';
       captureButton.style.border = 'none';
-      captureButton.style.borderRadius = '4px';
+      captureButton.style.borderRadius = '8px';
       captureButton.style.cursor = 'pointer';
+      captureButton.style.fontWeight = 'bold';
       
       const cancelButton = document.createElement('button');
       cancelButton.textContent = 'Cancel';
-      cancelButton.style.padding = '10px 20px';
+      cancelButton.style.padding = '12px 24px';
       cancelButton.style.backgroundColor = '#6B7280';
       cancelButton.style.color = 'white';
       cancelButton.style.border = 'none';
-      cancelButton.style.borderRadius = '4px';
+      cancelButton.style.borderRadius = '8px';
       cancelButton.style.cursor = 'pointer';
+      
+      // Add status message
+      const statusMessage = document.createElement('p');
+      statusMessage.textContent = 'Camera is active. Please allow camera access if prompted.';
+      statusMessage.style.color = 'white';
+      statusMessage.style.textAlign = 'center';
+      statusMessage.style.marginBottom = '15px';
       
       buttonContainer.appendChild(cancelButton);
       buttonContainer.appendChild(captureButton);
       
+      cameraContainer.appendChild(statusMessage);
       cameraContainer.appendChild(videoElement);
       cameraContainer.appendChild(buttonContainer);
       
       document.body.appendChild(cameraContainer);
       
       // Get camera stream
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
+      
       videoElement.srcObject = stream;
       
       // Handle cancel button

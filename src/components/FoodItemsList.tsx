@@ -5,10 +5,10 @@ import FoodItem from './FoodItem';
 import { FoodItem as FoodItemType } from '@/types';
 
 interface FoodItemsListProps {
-  onEditItem: (item: FoodItemType) => void;
+  onViewItem: (item: FoodItemType) => void;
 }
 
-const FoodItemsList = ({ onEditItem }: FoodItemsListProps) => {
+const FoodItemsList = ({ onViewItem }: FoodItemsListProps) => {
   const { foodItems, loading, error } = useFoodInventory();
 
   if (loading) {
@@ -44,7 +44,7 @@ const FoodItemsList = ({ onEditItem }: FoodItemsListProps) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {foodItems.map((item) => (
-        <FoodItem key={item.id} item={item} onEdit={onEditItem} />
+        <FoodItem key={item.id} item={item} onView={onViewItem} />
       ))}
     </div>
   );

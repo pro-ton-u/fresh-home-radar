@@ -5,14 +5,14 @@ import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { FoodItem as FoodItemType } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash, Edit, Heart } from 'lucide-react';
+import { Trash, Eye, Heart } from 'lucide-react';
 
 interface FoodItemProps {
   item: FoodItemType;
-  onEdit: (item: FoodItemType) => void;
+  onView: (item: FoodItemType) => void;
 }
 
-const FoodItem = ({ item, onEdit }: FoodItemProps) => {
+const FoodItem = ({ item, onView }: FoodItemProps) => {
   const { deleteFoodItem } = useFoodInventory();
   const daysRemaining = getDaysRemaining(item.expiryDate);
   const expiryStatus = getExpiryStatus(daysRemaining);
@@ -92,9 +92,9 @@ const FoodItem = ({ item, onEdit }: FoodItemProps) => {
         {item.notes && <p className="text-sm mt-1 text-gray-500">{item.notes}</p>}
       </CardContent>
       <CardFooter className="flex justify-between p-4 pt-0">
-        <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
-          <Edit className="h-4 w-4 mr-1" />
-          Edit
+        <Button variant="ghost" size="sm" onClick={() => onView(item)}>
+          <Eye className="h-4 w-4 mr-1" />
+          View
         </Button>
         <Button variant="ghost" size="sm" onClick={() => deleteFoodItem(item.id)}>
           <Trash className="h-4 w-4 mr-1" />

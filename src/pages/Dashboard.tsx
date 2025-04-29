@@ -5,22 +5,24 @@ import { Plus, Bell, Home } from 'lucide-react';
 import CategoryFilter from '@/components/CategoryFilter';
 import FoodItemsList from '@/components/FoodItemsList';
 import AddFoodItemDialog from '@/components/AddFoodItemDialog';
+import ViewFoodItemDialog from '@/components/ViewFoodItemDialog';
 import NotificationSettings from '@/components/NotificationSettings';
 import { FoodItem } from '@/types';
 
 const Dashboard = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
-  const [editItem, setEditItem] = useState<FoodItem | undefined>(undefined);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<FoodItem | undefined>(undefined);
 
   const handleAddItem = () => {
-    setEditItem(undefined);
+    setSelectedItem(undefined);
     setIsAddDialogOpen(true);
   };
 
-  const handleEditItem = (item: FoodItem) => {
-    setEditItem(item);
-    setIsAddDialogOpen(true);
+  const handleViewItem = (item: FoodItem) => {
+    setSelectedItem(item);
+    setIsViewDialogOpen(true);
   };
 
   return (
@@ -43,13 +45,21 @@ const Dashboard = () => {
 
       <CategoryFilter />
       
-      <FoodItemsList onEditItem={handleEditItem} />
+      <FoodItemsList onViewItem={handleViewItem} />
       
       {isAddDialogOpen && (
         <AddFoodItemDialog 
           isOpen={isAddDialogOpen} 
           onClose={() => setIsAddDialogOpen(false)} 
-          editItem={editItem}
+          editItem={undefined}
+        />
+      )}
+      
+      {isViewDialogOpen && selectedItem && (
+        <ViewFoodItemDialog 
+          isOpen={isViewDialogOpen} 
+          onClose={() => setIsViewDialogOpen(false)} 
+          item={selectedItem}
         />
       )}
       
