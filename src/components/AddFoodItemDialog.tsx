@@ -10,7 +10,7 @@ import { useFoodInventory } from '@/contexts/FoodInventoryContext';
 import { AddFoodItemFormData, FoodCategory, FoodItem } from '@/types';
 import { fileToDataUrl, takePicture } from '@/utils/imageUtils';
 import { freshnessToExpiryDate, getDetailedTimeRemaining } from '@/utils/dateUtils';
-import { Calendar, Camera, Upload, X } from 'lucide-react';
+import { Camera, Image, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AddFoodItemDialogProps {
@@ -35,6 +35,7 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
   const [error, setError] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [expiryTimeRemaining, setExpiryTimeRemaining] = useState<string>('');
+  const [isImageCaptured, setIsImageCaptured] = useState(false);
 
   useEffect(() => {
     if (category === 'fruits' && freshness) {
@@ -96,6 +97,7 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
       setFreshness(3);
       setNotes('');
       setImage('/placeholder.svg');
+      setIsImageCaptured(false);
     }
   };
 
@@ -106,6 +108,7 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
     try {
       const dataUrl = await fileToDataUrl(file);
       setImage(dataUrl);
+      setIsImageCaptured(true);
       toast.success('Image uploaded successfully');
     } catch (error) {
       console.error('Error processing image:', error);
@@ -119,6 +122,7 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
       setIsCameraActive(true);
       const dataUrl = await takePicture();
       setImage(dataUrl);
+      setIsImageCaptured(true);
       setIsCameraActive(false);
       toast.success('Photo captured successfully');
     } catch (error) {
@@ -133,18 +137,23 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
   
   const removeImage = () => {
     setImage('/placeholder.svg');
+    setIsImageCaptured(false);
     toast.success('Image removed');
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editItem ? 'Edit Food Item' : 'Add New Food Item'}</DialogTitle>
-          <DialogDescription>Fill in the details below to add a new food item to your inventory.</DialogDescription>
+          <DialogDescription>
+            {isImageCaptured 
+              ? 'Great! Your image is uploaded. Now complete the details below.'
+              : 'Take a photo or upload an image of your food item, then fill in the details.'}
+          </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {error && (
             <div className="bg-red-50 text-red-800 p-3 rounded-md text-sm">
               {error}
@@ -152,9 +161,12 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
           )}
           
           <div className="grid grid-cols-1 gap-4">
-            {/* Improved image section - now at the top for better visibility */}
+            {/* Improved image section with more emphasis on camera */}
             <div className="space-y-2">
-              <Label htmlFor="image">Food Image</Label>
+              <Label htmlFor="image" className="flex items-center gap-2">
+                <Image className="h-4 w-4" />
+                Food Image
+              </Label>
               
               <div className="rounded-md border-2 border-dashed border-gray-300 p-4 flex flex-col items-center justify-center">
                 {/* Show image preview if available */}
@@ -174,22 +186,23 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-48 w-full bg-gray-100 rounded-md text-gray-400">
-                    <Camera className="h-12 w-12" />
+                  <div className="flex flex-col items-center justify-center h-48 w-full bg-gray-100 rounded-md text-gray-400">
+                    <Camera className="h-12 w-12 mb-2" />
+                    <p className="text-sm text-gray-500 text-center">Take a photo or upload an image</p>
                   </div>
                 )}
                 
-                {/* Image capture buttons */}
-                <div className="grid grid-cols-2 gap-3 w-full mt-3">
+                {/* Image capture buttons - Emphasized camera button */}
+                <div className="grid grid-cols-1 gap-3 w-full mt-3">
                   <Button 
                     type="button" 
-                    variant="outline" 
+                    variant="default" 
                     onClick={handleTakePhoto}
                     disabled={isCameraActive || isSubmitting}
-                    className="w-full flex items-center justify-center gap-2 h-12"
+                    className="w-full flex items-center justify-center gap-2 h-12 bg-blue-600 hover:bg-blue-700"
                   >
                     <Camera className="h-5 w-5" />
-                    Take Photo
+                    Take Photo with Camera
                   </Button>
                   
                   <Button
@@ -200,8 +213,8 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                     disabled={isCameraActive || isSubmitting}
                   >
                     <label>
-                      <Upload className="h-5 w-5" />
-                      Upload Image
+                      <Image className="h-5 w-5" />
+                      Upload Image from Gallery
                       <input
                         type="file"
                         id="image"
@@ -281,7 +294,6 @@ const AddFoodItemDialog = ({ isOpen, onClose, editItem }: AddFoodItemDialogProps
                     required
                     min={new Date().toISOString().split('T')[0]}
                   />
-                  <Calendar className="absolute right-3 top-2.5 h-4 w-4 text-gray-500" />
                 </div>
               </div>
             )}

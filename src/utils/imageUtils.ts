@@ -1,4 +1,3 @@
-
 // Convert a File to a data URL
 export const fileToDataUrl = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -100,7 +99,7 @@ export const compressImage = async (
   });
 };
 
-// Take a photo using the device camera - simplified and improved for better touch handling
+// Take a photo using the device camera - improved to ensure capture works reliably
 export const takePicture = async (): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -153,7 +152,6 @@ export const takePicture = async (): Promise<string> => {
       captureButton.style.fontSize = '18px'; // Larger text
       captureButton.style.flex = '1';
       captureButton.style.maxWidth = '200px';
-      // Fix: Use standard CSS property names instead of vendor-prefixed ones
       captureButton.style.setProperty('-webkit-tap-highlight-color', 'transparent');
       captureButton.style.touchAction = 'manipulation';
       
@@ -169,7 +167,6 @@ export const takePicture = async (): Promise<string> => {
       cancelButton.style.fontSize = '18px'; // Larger text
       cancelButton.style.flex = '1';
       cancelButton.style.maxWidth = '200px';
-      // Fix: Use standard CSS property names instead of vendor-prefixed ones
       cancelButton.style.setProperty('-webkit-tap-highlight-color', 'transparent');
       cancelButton.style.touchAction = 'manipulation';
       
@@ -200,58 +197,66 @@ export const takePicture = async (): Promise<string> => {
       
       videoElement.srcObject = stream;
       
-      // Handle button clicks with both click and touchend events
-      const addButtonEvents = (button, handler) => {
-        button.addEventListener('click', handler, { passive: false });
-        button.addEventListener('touchstart', (e) => {
-          e.preventDefault(); // Prevent default touch behavior
-          button.style.opacity = '0.8';
-        }, { passive: false });
-        button.addEventListener('touchend', (e) => {
-          e.preventDefault(); // Prevent default touch behavior
-          button.style.opacity = '1';
-          handler(e);
-        }, { passive: false });
+      // Wait for video to be loaded and playable
+      await new Promise((resolve) => {
+        videoElement.onloadedmetadata = () => {
+          videoElement.play().then(resolve);
+        };
+      });
+      
+      // Improved button event handling to ensure clicks work properly
+      const handleCapture = () => {
+        try {
+          // Create a canvas to capture the image
+          const canvas = document.createElement('canvas');
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            throw new Error('Failed to get canvas context');
+          }
+          
+          // Draw the video frame to canvas
+          ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+          
+          // Convert canvas to data URL
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          
+          // Clean up
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+          }
+          document.body.removeChild(cameraContainer);
+          
+          resolve(dataUrl);
+        } catch (error) {
+          console.error('Error capturing photo:', error);
+          reject(error);
+        }
       };
       
-      // Handle cancel button
-      addButtonEvents(cancelButton, (e) => {
-        e.preventDefault();
+      const handleCancel = () => {
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
         }
         document.body.removeChild(cameraContainer);
         reject(new Error('Camera access cancelled'));
+      };
+      
+      // Add button click event listeners with both click and touch handling
+      captureButton.addEventListener('click', handleCapture);
+      captureButton.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleCapture();
       });
       
-      // Handle capture button
-      addButtonEvents(captureButton, (e) => {
+      cancelButton.addEventListener('click', handleCancel);
+      cancelButton.addEventListener('touchend', (e) => {
         e.preventDefault();
-        
-        // Create a canvas to capture the image
-        const canvas = document.createElement('canvas');
-        canvas.width = videoElement.videoWidth;
-        canvas.height = videoElement.videoHeight;
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
-        }
-        
-        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-        
-        // Convert canvas to data URL
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        
-        // Stop camera stream and remove UI
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop());
-        }
-        document.body.removeChild(cameraContainer);
-        
-        resolve(dataUrl);
+        handleCancel();
       });
+      
     } catch (error) {
       console.error('Error accessing camera:', error);
       reject(error);
